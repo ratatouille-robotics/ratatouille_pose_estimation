@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
+
 import rospy
 import yaml
 from sensor_msgs.msg import CameraInfo
 
 def yaml_to_CameraInfo(yaml_fname):
     """
-    Parse a yaml file containing camera calibration data (as produced by 
-    rosrun camera_calibration cameracalibrator.py) into a 
+    Parse a yaml file containing camera calibration data (as produced by
+    rosrun camera_calibration cameracalibrator.py) into a
     sensor_msgs/CameraInfo msg.
-    
+
     Parameters
     ----------
     yaml_fname : str
