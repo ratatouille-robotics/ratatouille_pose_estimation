@@ -4,6 +4,7 @@ import rospy
 import yaml
 from sensor_msgs.msg import CameraInfo
 
+
 def yaml_to_CameraInfo(yaml_fname):
     """
     Parse a yaml file containing camera calibration data (as produced by
@@ -34,6 +35,7 @@ def yaml_to_CameraInfo(yaml_fname):
     camera_info_msg.distortion_model = calib_data["distortion_model"]
     return camera_info_msg
 
+
 if __name__ == "__main__":
     # Get fname from command line (cmd line input required)
     # import argparse
@@ -42,8 +44,7 @@ if __name__ == "__main__":
     #                                          "camera calibration data")
     # args = arg_parser.parse_args()
     # filename = args.filename
-    filename = rospy.get_param('/corrected_calibration/filename', \
-                               '/home/ratatouille/catkin_ws/src/calibration/yaml/ost.yaml')
+    filename = rospy.get_param("/corrected_calibration/filename", "/yaml/ost.yaml")
 
     # Parse yaml file
     camera_info_msg = yaml_to_CameraInfo(filename)

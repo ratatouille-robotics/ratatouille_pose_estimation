@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(calibration)
+project(ratatouille_pose_estimation)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -7,10 +7,11 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+catkin_python_setup()
+
 catkin_package(
-  LIBRARIES calibration
+  LIBRARIES ratatouille_pose_estimation
   CATKIN_DEPENDS roscpp rospy std_msgs
-  DEPENDS system_lib
 )
 
 include_directories(

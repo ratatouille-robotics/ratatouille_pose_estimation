@@ -1,12 +1,19 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>calibration</name>
-  <version>0.0.0</version>
-  <description>The corrected camera calibration publisher node</description>
+  <name>ratatouille_pose_estimation</name>
+  <version>0.1.0</version>
+  <description>This is the pose estimation package for Ratatouille which publishes the modified camera intrinsics (to override the RealSense factory calibration) and the calculated marker poses.</description>
+
+  <maintainer email="harshita@andrew.cmu.edu">Harshit Agrawal</maintainer>
   <maintainer email="saishrub@andrew.cmu.edu">Sai Shruthi Balaji</maintainer>
+  <maintainer email="apavani2@andrew.cmu.edu">Abhishek Pavani</maintainer>
+  <maintainer email="msakthiv@andrew.cmu.edu">Mohith Sakthivel</maintainer>
+  <maintainer email="nevinv@andrew.cmu.edu">Nevin Valsaraj</maintainer>
+
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -18,7 +25,5 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
 
-  <export>
-
-  </export>
+  <export></export>
 </package>
