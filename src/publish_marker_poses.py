@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from email import header
 import rospy
 import yaml
 from ar_track_alvar_msgs.msg import AlvarMarkers
@@ -14,7 +15,6 @@ class PreGraspPublisher:
     pose_marker_marker_frame = None
     marker_pose_origin = None
     subscriber = None
-    publisher = None
     broadcaster = None
 
     def __init__(self) -> None:
@@ -29,6 +29,7 @@ class PreGraspPublisher:
 
         self.broadcaster = tf2_ros.TransformBroadcaster()
 
+        # create a pose with container grasping offset
         self.pose_marker_marker_frame = Pose()
         self.pose_marker_marker_frame.position.x = 0.00
         self.pose_marker_marker_frame.position.y = -0.05
@@ -39,6 +40,7 @@ class PreGraspPublisher:
         self.pose_marker_marker_frame.orientation.z = quat[2]
         self.pose_marker_marker_frame.orientation.w = quat[3]
 
+        # create a pose at origin
         self.marker_pose_origin = Pose()
         self.marker_pose_origin.position.x = 0.00
         self.marker_pose_origin.position.y = 0.00
@@ -49,18 +51,18 @@ class PreGraspPublisher:
         self.marker_pose_origin.orientation.z = quat[2]
         self.marker_pose_origin.orientation.w = quat[3]
 
-    def compute_pregrasp(self, marker):
-
-        # get marker and extract pose, and correct pitch and roll
-        pose_marker_marker = PoseStamped()
-        pose_marker_marker.pose = self.marker_pose_origin
-        pose_marker_marker.header.frame_id = "ar_marker_" + str(marker.id)
-        pose_marker_marker.header.stamp = rospy.Time.now()
+    def _transform_pose_to_frame(
+        self, pose_source: Pose, header_frame_id: str, base_frame_id: str
+    ):
+        _pose_stamped = PoseStamped()
+        _pose_stamped.pose = pose_source
+        _pose_stamped.header.frame_id = header_frame_id
+        _pose_stamped.header.stamp = rospy.Time.now()
 
         try:
             # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
             pose_marker_corrected_global = self.tfBuffer.transform(
-                pose_marker_marker, "base_link", rospy.Duration(1)
+                _pose_stamped, base_frame_id, rospy.Duration(1)
             )
 
         except (
@@ -69,6 +71,16 @@ class PreGraspPublisher:
             tf2_ros.ExtrapolationException,
         ):
             raise
+        return pose_marker_corrected_global
+
+    def compute_pregrasp(self, marker):
+
+        # get marker and extract pose, and correct pitch and roll
+        pose_marker_corrected_global = self._transform_pose_to_frame(
+            self.marker_pose_origin,
+            header_frame_id="ar_marker_" + str(marker.id),
+            base_frame_id="base_link",
+        )
 
         # Correct yaw and roll
         # print(pose_marker_base_frame)
@@ -110,26 +122,11 @@ class PreGraspPublisher:
         self.broadcaster.sendTransform(transform_stamped)
 
         # now we have corrected pose in global frame- we need to convert this pose to marker frame
-
-        pose_marker_marker2 = PoseStamped()
-        pose_marker_marker2.pose = self.pose_marker_marker_frame
-        pose_marker_marker2.header.frame_id = "ar_marker_" + str(marker.id) + "_corrected"
-        pose_marker_marker2.header.stamp = rospy.Time.now()
-
-        try:
-            # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-            pose_marker_corrected_marker = self.tfBuffer.transform(
-                pose_marker_marker2,
-                "ar_marker_" + str(marker.id) + "_corrected",
-                rospy.Duration(1),
-            )
-
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            raise
+        pose_marker_corrected_marker = self._transform_pose_to_frame(
+            self.pose_marker_marker_frame,
+            header_frame_id="ar_marker_" + str(marker.id) + "_corrected",
+            base_frame_id="ar_marker_" + str(marker.id) + "_corrected",
+        )
 
         # End correct yaw and roll
 
@@ -143,7 +140,9 @@ class PreGraspPublisher:
         transform_stamped2 = TransformStamped()
         transform_stamped2.header.stamp = rospy.Time.now()
         # transform_stamped2.header.frame_id = "ar_marker_" + str(marker.id)
-        transform_stamped2.header.frame_id = "ar_marker_" + str(marker.id) + "_corrected"
+        transform_stamped2.header.frame_id = (
+            "ar_marker_" + str(marker.id) + "_corrected"
+        )
         transform_stamped2.child_frame_id = "pregrasp_" + str(marker.id)
         transform_stamped2.transform.translation.x = (
             pose_marker_corrected_marker.pose.position.x
