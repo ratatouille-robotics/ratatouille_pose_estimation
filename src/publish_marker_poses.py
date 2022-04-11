@@ -8,6 +8,7 @@ from geometry_msgs.msg import Quaternion, TransformStamped, Pose
 import tf2_ros
 from tf2_geometry_msgs.tf2_geometry_msgs import PoseStamped
 from tf.transformations import *
+from ratatouille_pose_transforms.transforms import PoseTransforms
 
 
 class PreGraspPublisher:
@@ -16,6 +17,7 @@ class PreGraspPublisher:
     marker_pose_origin = None
     subscriber = None
     broadcaster = None
+    pose_transformer = None
 
     def __init__(self) -> None:
         # Initialize node
@@ -27,7 +29,9 @@ class PreGraspPublisher:
             "/ar_pose_marker", AlvarMarkers, self.publish_marker_pregrasp
         )
 
+        # self.broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.broadcaster = tf2_ros.TransformBroadcaster()
+        self.pose_transformer = PoseTransforms()
 
         # create a pose with container grasping offset
         self.pose_marker_marker_frame = Pose()
@@ -51,36 +55,16 @@ class PreGraspPublisher:
         self.marker_pose_origin.orientation.z = quat[2]
         self.marker_pose_origin.orientation.w = quat[3]
 
-    def _transform_pose_to_frame(
-        self, pose_source: Pose, header_frame_id: str, base_frame_id: str
-    ):
-        _pose_stamped = PoseStamped()
-        _pose_stamped.pose = pose_source
-        _pose_stamped.header.frame_id = header_frame_id
-        _pose_stamped.header.stamp = rospy.Time.now()
-
-        try:
-            # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-            pose_marker_corrected_global = self.tfBuffer.transform(
-                _pose_stamped, base_frame_id, rospy.Duration(1)
-            )
-
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            raise
-        return pose_marker_corrected_global
-
     def compute_pregrasp(self, marker):
 
         # get marker and extract pose, and correct pitch and roll
-        pose_marker_corrected_global = self._transform_pose_to_frame(
-            self.marker_pose_origin,
+        pose_marker_corrected_global = self.pose_transformer.transform_pose_to_frame(
+            pose_source=self.marker_pose_origin,
             header_frame_id="ar_marker_" + str(marker.id),
             base_frame_id="base_link",
         )
+        if pose_marker_corrected_global is None:
+            return None
 
         # Correct yaw and roll
         # print(pose_marker_base_frame)
@@ -122,11 +106,13 @@ class PreGraspPublisher:
         self.broadcaster.sendTransform(transform_stamped)
 
         # now we have corrected pose in global frame- we need to convert this pose to marker frame
-        pose_marker_corrected_marker = self._transform_pose_to_frame(
-            self.pose_marker_marker_frame,
+        pose_marker_corrected_marker = self.pose_transformer.transform_pose_to_frame(
+            pose_source=self.pose_marker_marker_frame,
             header_frame_id="ar_marker_" + str(marker.id) + "_corrected",
             base_frame_id="ar_marker_" + str(marker.id) + "_corrected",
         )
+        if pose_marker_corrected_marker is None:
+            return None
 
         # End correct yaw and roll
 
@@ -161,12 +147,12 @@ class PreGraspPublisher:
 
     def publish_marker_pregrasp(self, data):
         # for marker in msg
-        # rospy.loginfo(rospy.get_caller_id())
         for marker in data.markers:
             # compute pre-grasp
             pregrasp_transform_stamped = self.compute_pregrasp(marker)
             # publish list of pre-grasp
-            self.broadcaster.sendTransform(pregrasp_transform_stamped)
+            if pregrasp_transform_stamped is not None:
+                self.broadcaster.sendTransform(pregrasp_transform_stamped)
 
 
 if __name__ == "__main__":
