@@ -26,7 +26,7 @@ class PreGraspPublisher:
         self.tfBuffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tfBuffer)
         self.subscriber = rospy.Subscriber(
-            "/ar_pose_marker", AlvarMarkers, self.publish_marker_pregrasp
+            "/ar_pose_marker", AlvarMarkers, self.publish_marker_pregrasp, queue_size=1
         )
 
         # self.broadcaster = tf2_ros.StaticTransformBroadcaster()
