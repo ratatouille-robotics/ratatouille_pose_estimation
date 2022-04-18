@@ -36,8 +36,8 @@ class PreGraspPublisher:
         # create a pose with container grasping offset
         self.pose_marker_marker_frame = Pose()
         self.pose_marker_marker_frame.position.x = 0.00
-        self.pose_marker_marker_frame.position.y = -0.05
-        self.pose_marker_marker_frame.position.z = 0.30
+        self.pose_marker_marker_frame.position.y = -0.040
+        self.pose_marker_marker_frame.position.z = 0.29
         quat = quaternion_from_euler(0, math.pi, 0)
         self.pose_marker_marker_frame.orientation.x = quat[0]
         self.pose_marker_marker_frame.orientation.y = quat[1]
